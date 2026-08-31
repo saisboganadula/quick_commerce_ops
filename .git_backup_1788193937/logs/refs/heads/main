@@ -1,2 +1,0 @@
-0000000000000000000000000000000000000000 7f2a2b124747e3184f97c1a9a337c7838ebcba07 Sukheshwar's <apple@Apples-MacBook-Pro.local> 1788193349 +0530	commit (initial): Add README and index
-7f2a2b124747e3184f97c1a9a337c7838ebcba07 406f48913f23fc5e349a6ea68f2b65fa73a344a3 Sukheshwar's <apple@Apples-MacBook-Pro.local> 1788193795 +0530	commit: Stop tracking local venv and macOS files; add .gitignore
