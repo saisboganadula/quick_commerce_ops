@@ -1,0 +1,10 @@
+Table,Validation_Test,Passed,Failure_Count
+Quality Issues,Issue_ID is unique,True,0
+Quality Issues,Every Order_ID exists,True,0
+Quality Issues,Every populated Order_Item_ID exists,True,0
+Quality Issues,Every probable worker exists,True,0
+Quality Issues,Financial impact is non-negative,True,0
+SLA Root Causes,One root-cause row exists per order,True,0
+SLA Root Causes,Every row has a primary classification,True,0
+SLA Root Causes,Breaches are not classified Within SLA,True,0
+SLA Root Causes,Non-breaches are classified Within SLA,True,0

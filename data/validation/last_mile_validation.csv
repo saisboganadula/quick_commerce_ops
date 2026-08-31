@@ -1,0 +1,11 @@
+Table,Validation_Test,Passed,Failure_Count
+Rider Assignments,Every order has a rider assignment,True,0
+Rider Assignments,One rider assignment exists per order,True,0
+Rider Assignments,Every assigned worker is a rider,True,0
+Delivery Events,Every order has a delivery event,True,0
+Delivery Events,One delivery event exists per order,True,0
+Delivery Events,Timestamps follow the correct sequence,True,0
+Delivery Events,Duration metrics are non-negative,True,0
+Delivery Events,Displayed SLA remains between 7 and 25 minutes,True,0
+Delivery Events,Rider cost components reconcile,True,0
+Rider Performance,Utilization is non-negative,True,0

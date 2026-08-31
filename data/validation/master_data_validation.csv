@@ -1,0 +1,18 @@
+Table,Validation_Test,Passed,Failure_Count
+Stores,Row count equals 5,True,0
+Stores,Required columns exist,True,0
+Stores,Store_ID is unique,True,0
+Stores,Store_Name is unique,True,0
+Stores,Required values are populated,True,0
+Stores,Daily-order baselines are between 1700 and 2300,True,0
+Stores,Delivery radii are between 1 and 5 km,True,0
+Stores,All stores are in Hyderabad,True,0
+Stores,All stores operate 24 hours,True,0
+Time Intervals,Row count equals 48,True,0
+Time Intervals,Interval_ID is unique,True,0
+Time Intervals,Every interval is 30 minutes,True,0
+Time Intervals,Intervals are continuous,True,0
+Time Intervals,Start minutes are within the day,True,0
+Time Intervals,End minutes cover no more than 24 hours,True,0
+Time Intervals,First interval starts at minute 0,True,0
+Time Intervals,Final interval ends at minute 1440,True,0

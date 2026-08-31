@@ -1,0 +1,9 @@
+Table,Validation_Test,Passed,Failure_Count
+Interval Operations,Store-date-interval key is unique,True,0
+Interval Operations,Expected interval rows are present,True,0
+Interval Operations,Orders reconcile to raw Orders,True,0
+Interval Operations,Rider costs reconcile to Delivery Events,True,0
+Interval Operations,SLA breach rate is between 0 and 1,True,0
+Interval Operations,Quality rate is between 0 and 1,True,0
+Interval Operations,Utilization values are non-negative,True,0
+Interval Operations,Recommended action is populated,True,0

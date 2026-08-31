@@ -1,0 +1,15 @@
+Table,Validation_Test,Passed,Failure_Count
+Products,Product_ID is unique,True,0
+Promotions,Promotion_ID is unique,True,0
+Orders,Order_ID is unique,True,0
+Orders,Order count reconciles to interval demand,True,0
+Orders,Every interval order count reconciles,True,0
+Orders,Every Store_ID exists,True,0
+Orders,Every Promotion_ID exists when populated,True,0
+Orders,Delivery distance is within store radius,True,0
+Order Items,Order_Item_ID is unique,True,0
+Order Items,Every Order_ID exists,True,0
+Order Items,Every Product_ID exists,True,0
+Order Items,Every order has at least one item,True,0
+Order Items,Quantities are positive,True,0
+Order Items,Item quantities reconcile to order units,True,0

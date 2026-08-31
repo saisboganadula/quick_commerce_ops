@@ -1,0 +1,6 @@
+Store_ID,Store_Name,City,Store_Size_Band,Base_Daily_Orders,Delivery_Radius_KM,Operating_Hours,Active_Flag
+DS001,Madhapur,Hyderabad,Large,2300,2.5,24,True
+DS002,Gachibowli,Hyderabad,Large,2100,3.0,24,True
+DS003,Kondapur,Hyderabad,Medium,1900,2.8,24,True
+DS004,Kukatpally,Hyderabad,Large,2200,3.2,24,True
+DS005,Banjara Hills,Hyderabad,Medium,1700,2.4,24,True

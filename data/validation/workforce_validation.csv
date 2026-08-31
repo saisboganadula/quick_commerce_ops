@@ -1,0 +1,12 @@
+Table,Validation_Test,Passed,Failure_Count
+Workers,Worker_ID is unique,True,0
+Workers,Every home store exists,True,0
+Shifts,Shift_ID is unique,True,0
+Shifts,Every Worker_ID exists,True,0
+Shifts,Every Store_ID exists,True,0
+Shifts,Base shifts last 9 hours,True,0
+Shifts,OD shifts last 4 hours,True,0
+Shifts,Logged hours are non-negative,True,0
+Shifts,Absent workers have zero logged hours,True,0
+Shifts,No login occurs before scheduled start,True,0
+Shifts,No logout occurs after scheduled end,True,0

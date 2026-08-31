@@ -1,0 +1,13 @@
+Table,Validation_Test,Passed,Failure_Count
+Calendar,Calendar has the requested number of dates,True,0
+Calendar,Date is unique,True,0
+Daily Store Conditions,One condition row exists per store-date,True,0
+Daily Store Conditions,Store_Date_ID is unique,True,0
+Daily Store Conditions,Random noise stays within its allowed range,True,0
+Daily Store Demand,One demand row exists per store-date,True,0
+Daily Store Demand,Store_Date_ID is unique,True,0
+Daily Store Demand,Every Store_ID exists in Stores,True,0
+Daily Store Demand,Every Date exists in Calendar,True,0
+Daily Store Demand,Actual orders are non-negative integers,True,0
+Daily Store Demand,Weekend average demand exceeds weekday average demand,True,0
+Daily Store Demand,Promotion-day average demand exceeds non-promotion demand,True,0

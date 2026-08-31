@@ -1,0 +1,11 @@
+Table,Validation_Test,Passed,Failure_Count
+Picker Assignments,Every order has one picker assignment,True,0
+Picker Assignments,One assignment exists per order,True,0
+Picker Assignments,Every assigned worker is a picker,True,0
+Fulfilment Events,Every order has one fulfilment event,True,0
+Fulfilment Events,One event row exists per order,True,0
+Fulfilment Events,Timestamps follow the correct sequence,True,0
+Fulfilment Events,Queue minutes are non-negative,True,0
+Fulfilled Items,No order-item rows were lost or added,True,0
+Fulfilled Items,Every item has a picker,True,0
+Picker Operations,Activity allocations equal active pickers,True,0

@@ -1,0 +1,10 @@
+Table,Validation_Test,Passed,Failure_Count
+Interval Demand,Expected number of rows generated,True,0
+Interval Demand,Store-date-interval key is unique,True,0
+Interval Demand,Every Store_ID exists in Stores,True,0
+Interval Demand,Every Interval_ID exists in Time Intervals,True,0
+Interval Demand,Every store-date has 48 intervals,True,0
+Interval Demand,Interval orders reconcile exactly to daily orders,True,0
+Interval Demand,Demand probabilities sum to 1 per store-date,True,0
+Interval Demand,Order counts are non-negative,True,0
+Interval Demand,Evening demand exceeds overnight demand,True,0
