@@ -226,6 +226,97 @@ flowchart TD
 
 This diagram maps directly to the scripts `scripts/01_*` → `scripts/09_*`. Each arrow represents CSV outputs read by the next stage. Use the diagram during walkthroughs to keep the join keys and grain explicit.
 
+If your environment (Safari or other viewers) cannot render Mermaid, a PNG fallback is available below:
+
+![Pipeline diagram](docs/images/fig-pipeline.png)
+
+**Pipeline joins: keys and examples**
+
+Below are the main joins between stages, the typical join keys, and short SQL and pandas examples showing how the joins are performed. Use these examples during walkthroughs to reproduce the fact table construction and to validate joins.
+
+1) Master → Daily demand
+- Keys: `Store_ID`
+- SQL example:
+
+```sql
+SELECT d.*, s.store_name
+FROM data_raw.daily_store_demand d
+JOIN data_raw.stores s ON d.Store_ID = s.Store_ID;
+```
+
+- pandas example:
+
+```python
+import pandas as pd
+stores = pd.read_csv('data/raw/stores.csv')
+demand = pd.read_csv('data/raw/daily_store_demand.csv')
+df = demand.merge(stores, on='Store_ID', how='left')
+```
+
+2) Daily demand → Interval allocation
+- Keys: `Store_ID`, `Date` (interval allocation ensures sums match daily totals)
+- SQL example:
+
+```sql
+SELECT ia.*, d.total_orders
+FROM data_raw.interval_demand ia
+JOIN data_raw.daily_store_demand d
+  ON ia.Store_ID = d.Store_ID AND ia.Date = d.Date;
+```
+
+3) Interval allocation → Orders & order_items
+- Keys: `Store_ID`, `Date`, `Interval_ID`
+- pandas example:
+
+```python
+orders = pd.read_csv('data/raw/orders.csv')
+intervals = pd.read_csv('data/raw/interval_demand.csv')
+# orders already have Interval_ID assigned in simulation; join for enrichment
+orders = orders.merge(intervals[['Store_ID','Date','Interval_ID']], on=['Store_ID','Date','Interval_ID'], how='left')
+```
+
+4) Orders → Store fulfilment (picker assignments)
+- Keys: `Order_ID` → enrich with picker events via `order_picker_assignments` and `fulfilment_events`
+
+```sql
+SELECT o.Order_ID, pa.Picker_ID, fe.pick_start_min, fe.pick_end_min
+FROM data_raw.orders o
+LEFT JOIN data_raw.order_picker_assignments pa ON o.Order_ID = pa.Order_ID
+LEFT JOIN data_raw.fulfilment_events fe ON pa.assignment_id = fe.assignment_id;
+```
+
+5) Fulfilment → Last-mile (rider assignment)
+- Keys: `Order_ID` → `order_rider_assignments`, use `Store_ID` + `Interval_ID` for interval aggregation
+
+```python
+riders = pd.read_csv('data/raw/order_rider_assignments.csv')
+deliveries = pd.read_csv('data/raw/delivery_events.csv')
+orders = orders.merge(riders, on='Order_ID', how='left').merge(deliveries, on='Order_ID', how='left')
+```
+
+6) Fulfilment & Last-mile → Interval aggregation (build fact)
+- Keys: `Store_ID`, `Date`, `Interval_ID` (group-by aggregation produces counts, averages, and diagnostics)
+
+```sql
+SELECT Store_ID, Date, Interval_ID,
+  COUNT(DISTINCT Order_ID) AS Orders,
+  AVG(Rider_Utilization) AS Rider_Utilization,
+  SUM(SLA_Breach_Flag) AS SLA_Breaches
+FROM combined_events
+GROUP BY Store_ID, Date, Interval_ID;
+```
+
+7) Quality events → Augment fact
+- Keys: `Order_ID`, `Store_ID`, `Date`, `Interval_ID` (map quality issues back to interval rows)
+
+```python
+quality = pd.read_csv('data/raw/quality_issues.csv')
+qagg = quality.groupby(['Store_ID','Date','Interval_ID']).agg({'issue_id':'count'}).rename(columns={'issue_id':'Quality_Issue_Count'})
+fact = fact.merge(qagg, on=['Store_ID','Date','Interval_ID'], how='left')
+```
+
+These examples are intentionally short — during our walkthrough we'll expand each join with exact column lists, null handling, and validation checks.
+
 
 ---
 
