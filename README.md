@@ -213,29 +213,29 @@ Below is a high-level architecture diagram of the pipeline (master → demand �
 
 ```mermaid
 flowchart TD
-	A["Store and time masters"] --> B["Daily demand"]
-	B --> C["30-minute interval demand"]
-	C --> D["Orders and order items"]
-	A --> E["Workers and shifts"]
-	D --> F["Picker fulfilment"]
+	A[Store and time masters] --> B[Daily demand]
+	B --> C[30-minute interval demand]
+	C --> D[Orders and order items]
+	A --> E[Workers and shifts]
+	D --> F[Picker fulfilment]
 	E --> F
-	F --> G["Rider assignment and delivery"]
+	F --> G[Rider assignment and delivery]
 	E --> G
-	G --> H["Quality issues and SLA root causes"]
+	G --> H[Quality issues and SLA root causes]
 	F --> H
 	D --> H
 
-	C --> I["Interval analytical fact table"]
+	C --> I[Interval analytical fact table]
 	F --> I
 	G --> I
 	H --> I
 	E --> I
 
-	I --> J["Power Query"]
-	J --> K["PivotTables and charts"]
-	K --> L["Hourly rider requirements"]
-	L --> M["Shift matrix"]
-	M --> N["Solver roster optimization"]
+	I --> J[Power Query]
+	J --> K[PivotTables and charts]
+	K --> L[Hourly rider requirements]
+	L --> M[Shift matrix]
+	M --> N[Solver roster optimization]
 ```
 
 This diagram maps directly to the scripts `scripts/01_*` → `scripts/09_*`. Each arrow represents CSV outputs read by the next stage. Use the diagram during walkthroughs to keep the join keys and grain explicit.
