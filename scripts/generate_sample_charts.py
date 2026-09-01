@@ -158,3 +158,86 @@ else:
     print('Picker utilization column not found; skipped picker utilization plot')
 
 print('Done')
+
+# --- Additional charts: top stores by avg SLA and daypart aggregates ---
+col_daypart = find_col(['Daypart','Day Part','daypart'])
+
+# Top stores by average SLA breach rate
+store_acc = defaultdict(lambda: [0.0, 0])
+for r in rows:
+    s = r[col_store]
+    val = to_float(r.get(col_sla)) if col_sla else None
+    if val is not None:
+        store_acc[s][0] += val
+        store_acc[s][1] += 1
+
+store_avg = []
+for s, (tot, cnt) in store_acc.items():
+    if cnt > 0:
+        store_avg.append((s, tot / cnt))
+
+store_avg.sort(key=lambda x: x[1], reverse=True)
+top_n = 10
+top_stores = store_avg[:top_n]
+if top_stores:
+    names = [s for s, _ in top_stores]
+    values = [v for _, v in top_stores]
+    plt.figure(figsize=(8, max(4, len(names)*0.4)))
+    plt.barh(list(reversed(names)), list(reversed(values)), color='C3')
+    plt.xlabel('Average SLA Breach Rate')
+    plt.title(f'Top {len(names)} Stores by Average SLA Breach Rate (sample)')
+    topstores_out = os.path.join(OUT_DIR, 'fig-top-stores-sla.png')
+    plt.tight_layout()
+    plt.savefig(topstores_out, dpi=150)
+    plt.close()
+    print('Wrote', topstores_out)
+
+# Daypart aggregates (if Daypart column exists)
+if col_daypart:
+    dp_sla = defaultdict(lambda: [0.0, 0])
+    dp_req = defaultdict(lambda: [0.0, 0])
+    dp_act = defaultdict(lambda: [0.0, 0])
+    for r in rows:
+        dp = r.get(col_daypart)
+        if dp is None:
+            continue
+        sla_v = to_float(r.get(col_sla)) if col_sla else None
+        req_v = to_float(r.get(col_required_riders)) if col_required_riders else None
+        act_v = to_float(r.get(col_active_riders)) if col_active_riders else None
+        if sla_v is not None:
+            dp_sla[dp][0] += sla_v; dp_sla[dp][1] += 1
+        if req_v is not None:
+            dp_req[dp][0] += req_v; dp_req[dp][1] += 1
+        if act_v is not None:
+            dp_act[dp][0] += act_v; dp_act[dp][1] += 1
+
+    dayparts = sorted(dp_sla.keys())
+    sla_series = [ (dp_sla[d][0]/dp_sla[d][1]) if dp_sla[d][1]>0 else 0.0 for d in dayparts ]
+    req_series_dp = [ (dp_req[d][0]/dp_req[d][1]) if dp_req[d][1]>0 else 0.0 for d in dayparts ]
+    act_series_dp = [ (dp_act[d][0]/dp_act[d][1]) if dp_act[d][1]>0 else 0.0 for d in dayparts ]
+
+    plt.figure(figsize=(8,4))
+    plt.bar(dayparts, sla_series, color='C1')
+    plt.xlabel('Daypart')
+    plt.ylabel('Average SLA breach rate')
+    plt.title('Average SLA Breach Rate by Daypart (sample)')
+    dp_sla_out = os.path.join(OUT_DIR, 'fig-daypart-sla.png')
+    plt.tight_layout()
+    plt.savefig(dp_sla_out, dpi=150)
+    plt.close()
+    print('Wrote', dp_sla_out)
+
+    plt.figure(figsize=(8,4))
+    plt.plot(dayparts, req_series_dp, marker='o', label='Required Riders (mean)')
+    plt.plot(dayparts, act_series_dp, marker='o', label='Active Riders (mean)')
+    plt.xlabel('Daypart')
+    plt.ylabel('Riders')
+    plt.title('Required vs Active Riders by Daypart (sample)')
+    plt.legend()
+    dp_riders_out = os.path.join(OUT_DIR, 'fig-daypart-required-vs-active.png')
+    plt.tight_layout()
+    plt.savefig(dp_riders_out, dpi=150)
+    plt.close()
+    print('Wrote', dp_riders_out)
+else:
+    print('No Daypart column found; skipped daypart aggregates')

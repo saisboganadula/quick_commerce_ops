@@ -209,3 +209,90 @@ Files referenced in this README
 
 ---
 This README was generated from a code inspection of the simulation pipeline in this repository and is intended as a publication-quality companion document explaining the mechanics, intent, and recommended analysis for the simulated quick-commerce operations dataset.
+
+**Learning Order & Key Achievement**
+
+When we resume, we’ll walk through the project in learning order:
+
+1. What business problem we are solving
+2. How raw order, rider, picker, shift, and SLA data connect
+3. Why we created the interval-level analysis table
+4. How PivotTables converted interval data into operational KPIs
+5. Rider utilization and SLA relationships
+6. How workload became required rider headcount
+7. Why attendance and scenario buffers were added
+8. How shift coverage matrices work
+9. What Solver actually optimized
+10. Why the first roster produced excessive overlaps
+11. How changing one shift reduced rider-hours from 4,090 to 3,978 while maintaining full coverage
+12. How we would test rain, promotions, attendance loss, and demand surges
+
+**Key achievement so far**
+
+```
+Original roster:
+4,090 scheduled rider-hours
+Maximum excess: 112 riders
+
+Revised roster:
+3,978 scheduled rider-hours
+Maximum excess: 61 riders
+All hours still covered
+```
+
+That is a reduction of:
+
+```
+112 rider-hours
+2.7% of scheduled capacity
+```
+
+**Management lesson**
+
+> Headcount optimization alone is insufficient when shift timings are poorly aligned with demand. Redesigning shift boundaries can reduce excess capacity without compromising SLA coverage.
+
+**Save / Resume**
+
+Save the workbook as it is. When we return, we’ll review the entire pipeline slowly from the business question through the Excel formulas and Solver logic before making further changes.
+
+**Images and Figures (how to include)**
+
+To make the README easier to comprehend, add a couple of representative pictures or exported charts from your Excel workbook into `docs/images/` and reference them below. Recommended figures:
+
+- `docs/images/fig-sla-heatmap.png` — SLA Breach Rate heatmap (store × interval)
+- `docs/images/fig-required-vs-active-riders.png` — Required vs Active riders (hourly)
+- `docs/images/fig-picker-utilization.png` — Picker utilization and pick-queue times
+
+How to export from Excel (Mac):
+
+1. Open the workbook and select the PivotTable or chart.
+2. Right-click the chart → `Save as Picture...` → choose `PNG`.
+3. Save to `docs/images/` (create the folder if it doesn't exist).
+
+Insert images in README using the markdown below (replace filenames accordingly):
+
+![SLA breach heatmap](docs/images/fig-sla-heatmap.png)
+
+Figure: SLA Breach Rate heatmap (store × interval) — highlights persistent hotspots.
+
+![Required vs Active Riders](docs/images/fig-required-vs-active-riders.png)
+
+Figure: Required vs Active Riders (mean across stores) — where supply gaps emerge.
+
+![Picker utilization](docs/images/fig-picker-utilization.png)
+
+Figure: Picker Utilization by interval — internal fulfilment pressure indicator.
+
+![Top stores by SLA](docs/images/fig-top-stores-sla.png)
+
+Figure: Top stores by average SLA breach rate (sample) — prioritize these stores.
+
+![Daypart SLA](docs/images/fig-daypart-sla.png)
+
+Figure: Average SLA breach rate by daypart — daypart-level targeting.
+
+![Daypart riders](docs/images/fig-daypart-required-vs-active.png)
+
+Figure: Required vs Active Riders by daypart — shows mismatches at a daypart granularity.
+
+If you want different aggregates (store-level drill, rolling-window heatmaps, or top-N store trends), tell me which variant and I'll add it to `scripts/generate_sample_charts.py` and regenerate the images.
