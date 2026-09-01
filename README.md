@@ -380,8 +380,9 @@ pandas:
 ia = pd.read_csv('data/raw/interval_demand.csv')
 dd = pd.read_csv('data/raw/daily_store_demand.csv')
 agg = ia.groupby(['Store_ID','Date']).Interval_Orders.sum().reset_index().rename(columns={'Interval_Orders':'interval_sum'})
-check = dd.merge(agg, on=['Store_ID','Date'], how='left')
-check[check.Actual_Daily_Orders != check.interval_sum]
+This diagram maps directly to the scripts `scripts/01_*` → `scripts/09_*`. Each arrow represents CSV outputs read by the next stage. Use the diagram during walkthroughs to keep the join keys and grain explicit.
+If GitHub fails to render the Mermaid block, a vector fallback is available:
+![Pipeline diagram](docs/images/fig-pipeline.svg)
 ```
 
 - 3) Non-null join keys on fact: ensure `Store_ID`, `Date`, `Interval_ID` are present on every fact row.

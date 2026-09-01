@@ -7,7 +7,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-OUT = os.path.join('docs', 'images', 'fig-pipeline.png')
+OUT_PNG = os.path.join('docs', 'images', 'fig-pipeline.png')
+OUT_SVG = os.path.join('docs', 'images', 'fig-pipeline.svg')
 
 fig, ax = plt.subplots(figsize=(10,6))
 ax.axis('off')
@@ -47,5 +48,7 @@ arrow((0.45, 0.32), (0.72, 0.28))
 arrow((0.72, 0.22), (0.72, 0.08))
 
 plt.tight_layout()
-plt.savefig(OUT, dpi=200)
-print('Wrote', OUT)
+plt.savefig(OUT_PNG, dpi=200)
+plt.savefig(OUT_SVG, dpi=200, format='svg')
+print('Wrote', OUT_PNG)
+print('Wrote', OUT_SVG)
