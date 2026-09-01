@@ -1,8 +1,8 @@
-# Quick Commerce Operations — Simulated Operational Lifecycle
+# Quick Commerce Ops — Simulated Operations & Interval Analytics
 
 This repository contains a reproducible simulation and analytics pipeline that models core quick-commerce operations: in-store fulfilment (pickers), last-mile delivery (riders), order-level detail, quality issues, and interval-level operational analysis. The artifacts produced are intended to support dashboards, research, algorithm development (fleet sizing, rostering, route planning), and teaching about operational trade-offs in on-demand retail.
 
-## Index
+## Contents
 
 - [Run order (high level)](#run-order-high-level)
 - [Purpose and audience](#purpose-and-audience)
@@ -79,9 +79,9 @@ Simulation methodology (high level)
 Validation and data quality
 - Each script includes a `validate_*` function which checks structural (uniqueness, foreign keys), volumetric (row counts), and behavioral (weekend > weekday demand; evening > night) expectations.
 - If validations fail, scripts raise an exception and stop to prevent downstream contamination.
-# Quick Commerce Operations — Simulated Operational Lifecycle
+## Overview
 
-This repository provides a reproducible simulation and analytics pipeline that models core quick-commerce operations: store fulfilment (pickers), last-mile delivery (riders), order-level events, quality issues, and an interval-level analytical fact. Use this repo to build dashboards, explore operational trade-offs, and test rostering or fleet-sizing policies.
+This repository provides a reproducible simulation and analytics pipeline modeling quick-commerce operations: store fulfilment (pickers), last-mile delivery (riders), order-level events, quality issues, and an interval-level analytical fact. Use this repo to build dashboards, explore operational trade-offs, and test rostering or fleet-sizing policies.
 
 **Quick start (one-minute orientation)**
 - **Run order:** execute scripts `01` → `09` in `scripts/` (see `How to run` below).
