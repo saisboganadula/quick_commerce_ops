@@ -212,18 +212,16 @@ Below is a high-level architecture diagram of the pipeline (master → demand �
 
 ```mermaid
 flowchart TD
-	A[Master data: stores, items, time intervals] --> B[Daily demand generator]
-	B --> C[Interval allocation (48 half-hour buckets)]
-	C --> D[Orders & order items (detail window)]
-	D --> E[Store fulfilment (picker assignments, pick events)]
-	E --> F[Last-mile (rider assignment, deliveries, SLA calculations)]
-	E --> G[Quality events & root-cause classification]
-	F --> H[Interval aggregation & diagnostics]
+	A[Master data: stores items time_intervals] --> B[Daily demand generator]
+	B --> C[Interval allocation: 48 half-hour buckets]
+	C --> D[Orders and order_items]
+	D --> E[Store fulfilment: picker assignments and pick events]
+	E --> F[Last mile: rider assignment deliveries SLA calculations]
+	E --> G[Quality events and root cause classification]
+	F --> H[Interval aggregation and diagnostics]
 	G --> H
 	H --> I[data/processed/interval_operations_analysis.csv]
-	I --> J[Dashboards & charts (SLA heatmaps, utilization, root causes)]
-	style A fill:#f9f,stroke:#333,stroke-width:1px
-	style I fill:#bbf,stroke:#333,stroke-width:1px
+	I --> J[Dashboards and charts: SLA heatmaps utilization root causes]
 ```
 
 This diagram maps directly to the scripts `scripts/01_*` → `scripts/09_*`. Each arrow represents CSV outputs read by the next stage. Use the diagram during walkthroughs to keep the join keys and grain explicit.
