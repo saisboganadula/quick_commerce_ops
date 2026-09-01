@@ -329,7 +329,99 @@ qagg = quality.groupby(['Store_ID','Date','Interval_ID']).agg({'issue_id':'count
 fact = fact.merge(qagg, on=['Store_ID','Date','Interval_ID'], how='left')
 ```
 
-These examples are intentionally short — during our walkthrough we'll expand each join with exact column lists, null handling, and validation checks.
+These examples are intentionally short. Below are representative column-level join lists (typical columns observed in this repo) and validation checks you can run to ensure joins are correct.
+
+**Column-level join lists (representative)**
+- `data/raw/stores.csv`: `Store_ID`, `store_name`, `latitude`, `longitude`, `city`, `store_type`, `Base_Daily_Orders`
+- `data/raw/time_intervals.csv`: `Interval_ID`, `Start_Time`, `End_Time`, `Daypart`, `Default_Peak_Flag`
+- `data/raw/daily_store_demand.csv`: `Store_ID`, `Date`, `Expected_Daily_Orders`, `Actual_Daily_Orders`, `Promotion_Flag`, `Weather_Risk`
+- `data/raw/interval_demand.csv`: `Store_ID`, `Date`, `Interval_ID`, `Interval_Orders`, `Interval_Share`
+- `data/raw/orders.csv`: `Order_ID`, `Store_ID`, `Date`, `Interval_ID`, `Created_At`, `Total_Items`, `Order_Value_INR`
+- `data/raw/order_items.csv`: `Order_Item_ID`, `Order_ID`, `SKU`, `Quantity`, `Unit_Price_INR`
+- `data/raw/order_picker_assignments.csv`: `assignment_id`, `Order_ID`, `Picker_ID`, `Assigned_At`
+- `data/raw/fulfilment_events.csv`: `event_id`, `assignment_id`, `pick_start_min`, `pick_end_min`, `pick_duration_min`
+- `data/raw/order_rider_assignments.csv`: `assignment_id`, `Order_ID`, `Rider_ID`, `Assigned_At`
+- `data/raw/delivery_events.csv`: `delivery_id`, `Order_ID`, `pickup_time`, `delivery_time`, `total_delivery_min`, `rider_distance_km`
+- `data/raw/quality_issues.csv`: `issue_id`, `Order_ID`, `Store_ID`, `Date`, `Interval_ID`, `issue_type`, `severity`
+- `data/processed/interval_operations_analysis.csv` (fact): `Store_Date_Interval_ID`, `Store_ID`, `Date`, `Interval_ID`, `Daypart`, `Orders`, `Units`, `Active_Pickers`, `Required_Pickers_At_Target`, `Active_Riders`, `Required_Riders_At_Target`, `SLA_Breaches`, `Average_Total_Delivery_Min`, `Quality_Issue_Count`, `Dominant_Root_Cause`
+
+**Validation checks (quick SQL and pandas snippets)**
+
+- 1) Foreign-key completeness: every `Store_ID` in `daily_store_demand` must exist in `stores`.
+
+SQL:
+```sql
+SELECT COUNT(*) AS missing_stores
+FROM data_raw.daily_store_demand d
+LEFT JOIN data_raw.stores s ON d.Store_ID = s.Store_ID
+WHERE s.Store_ID IS NULL;
+```
+
+pandas:
+```python
+stores = pd.read_csv('data/raw/stores.csv')
+demand = pd.read_csv('data/raw/daily_store_demand.csv')
+missing = demand[~demand.Store_ID.isin(stores.Store_ID)]
+len(missing)
+```
+
+- 2) Interval-to-daily reconciliation: per `Store_ID` × `Date`, sum(`Interval_Orders`) == `Actual_Daily_Orders`.
+
+SQL:
+```sql
+SELECT d.Store_ID, d.Date,
+	d.Actual_Daily_Orders,
+	SUM(i.Interval_Orders) AS interval_sum
+FROM data_raw.daily_store_demand d
+JOIN data_raw.interval_demand i ON d.Store_ID = i.Store_ID AND d.Date = i.Date
+GROUP BY d.Store_ID, d.Date
+HAVING d.Actual_Daily_Orders <> SUM(i.Interval_Orders);
+```
+
+pandas:
+```python
+ia = pd.read_csv('data/raw/interval_demand.csv')
+dd = pd.read_csv('data/raw/daily_store_demand.csv')
+agg = ia.groupby(['Store_ID','Date']).Interval_Orders.sum().reset_index().rename(columns={'Interval_Orders':'interval_sum'})
+check = dd.merge(agg, on=['Store_ID','Date'], how='left')
+check[check.Actual_Daily_Orders != check.interval_sum]
+```
+
+- 3) Non-null join keys on fact: ensure `Store_ID`, `Date`, `Interval_ID` are present on every fact row.
+
+SQL:
+```sql
+SELECT COUNT(*) FROM data_processed.interval_operations_analysis WHERE Store_ID IS NULL OR Date IS NULL OR Interval_ID IS NULL;
+```
+
+pandas:
+```python
+fact = pd.read_csv('data/processed/interval_operations_analysis.csv')
+fact[fact[['Store_ID','Date','Interval_ID']].isnull().any(axis=1)]
+```
+
+- 4) Row-count sanity: number of fact rows should equal (#stores × #dates × 48) for a complete run (or fewer if trimmed).
+
+```python
+stores = pd.read_csv('data/raw/stores.csv')
+intervals = 48
+dates = fact.Date.nunique()
+expected = len(stores) * dates * intervals
+len(fact), expected
+```
+
+- 5) SLA aggregation validation: sum of per-order SLA breach flags aggregated to interval should equal `SLA_Breaches` in the fact.
+
+```sql
+SELECT f.Store_ID, f.Date, f.Interval_ID, f.SLA_Breaches,
+	SUM(o.sla_breach_flag) AS order_breaches
+FROM data_processed.interval_operations_analysis f
+JOIN data_raw.orders o ON f.Store_ID = o.Store_ID AND f.Date = o.Date AND f.Interval_ID = o.Interval_ID
+GROUP BY f.Store_ID, f.Date, f.Interval_ID
+HAVING f.SLA_Breaches <> SUM(o.sla_breach_flag);
+```
+
+These validation checks are a good starting point; during the final walkthrough I can add CI-style assertions (pytest or simple `scripts/validate_fact.py`) that raise errors when checks fail. If you want, I'll add `scripts/validate_fact.py` that runs the pandas checks and returns non-zero exit codes for CI.
 
 
 ---

@@ -16,9 +16,10 @@ boxes = [
     (0.05, 0.8, 'Master data\nstores items\ntime_intervals'),
     (0.25, 0.8, 'Daily demand\ngenerator'),
     (0.45, 0.8, 'Interval allocation\n48 half-hour buckets'),
-    (0.65, 0.8, 'Orders\nand order_items'),
-    (0.65, 0.55, 'Store fulfilment\npicker assignments\npick events'),
-    (0.85, 0.55, 'Last mile\nrider assignment\ndeliveries SLA'),
+    (0.65, 0.8, 'Orders and\norder items'),
+    (0.05, 0.6, 'Workers and\nshifts'),
+    (0.45, 0.6, 'Picker\nfulfilment'),
+    (0.65, 0.6, 'Rider assignment\nand delivery'),
     (0.85, 0.35, 'Interval aggregation\nand diagnostics'),
     (0.65, 0.35, 'Quality events\nroot cause classification'),
     (0.5, 0.05, 'data/processed/\ninterval_operations_analysis.csv'),
@@ -36,12 +37,13 @@ def arrow(a,b):
 arrow((0.13,0.8),(0.22,0.8))
 arrow((0.33,0.8),(0.42,0.8))
 arrow((0.53,0.8),(0.62,0.8))
-arrow((0.62,0.77),(0.62,0.58))
-arrow((0.74,0.58),(0.84,0.58))
-arrow((0.84,0.52),(0.84,0.39))
-arrow((0.74,0.39),(0.62,0.39))
-arrow((0.62,0.32),(0.52,0.12))
-arrow((0.52,0.08),(0.76,0.08))
+arrow((0.15,0.78),(0.15,0.64))
+arrow((0.45,0.78),(0.45,0.68))
+arrow((0.55,0.64),(0.62,0.64))
+arrow((0.62,0.6),(0.62,0.44))
+arrow((0.62,0.44),(0.45,0.42))
+arrow((0.45,0.32),(0.72,0.28))
+arrow((0.72,0.22),(0.72,0.08))
 
 plt.tight_layout()
 plt.savefig(OUT, dpi=150)
