@@ -178,6 +178,59 @@ The repo contains a set of sample charts used for onboarding (in `docs/images/`)
 
 ---
 
+**Figures (image + explanation)**
+
+![SLA breach heatmap](docs/images/fig-sla-heatmap.png)
+
+**What to read here:** This heatmap shows `SLA_Breach_Rate` with stores on the Y axis and half-hour `Interval_ID` on the X axis. Look for persistent horizontal bands (stores with systemic issues) and vertical bands (network-wide problem at specific intervals). Use this to prioritize stores and intervals for immediate action.
+
+![Required vs Active Riders](docs/images/fig-required-vs-active-riders.png)
+
+**What to read here:** Mean `Required_Riders_At_Target` versus mean `Active_Riders` across intervals. Gaps where the required line is above the active line indicate rider shortages; sustained gaps across peak intervals are high-priority for rostering or incentives.
+
+![Picker utilization](docs/images/fig-picker-utilization.png)
+
+**What to read here:** Average picker utilization by interval. Spikes show intense pick pressure; rising utilization followed by increasing pick-queue times (inspect `Average_Pick_Queue_Min`) implies store-level fulfilment bottlenecks.
+
+![Top stores by SLA](docs/images/fig-top-stores-sla.png)
+
+**What to read here:** Ranked stores by average SLA breach rate (sample). Use this list for tactical interventions (retraining, temporary rider allocation, or deeper quality investigations).
+
+![Daypart SLA](docs/images/fig-daypart-sla.png)
+
+**What to read here:** Average SLA breach rate aggregated by `Daypart` (morning, lunch, evening, night). Use daypart-level findings to test redistributing shifts or incentives to specific windows.
+
+![Daypart riders](docs/images/fig-daypart-required-vs-active.png)
+
+**What to read here:** Required vs Active riders aggregated by `Daypart`. This view shows whether supply mismatches are concentrated in particular dayparts and helps focus short-duration OD shifts.
+
+---
+
+**Data pipeline architecture**
+
+Below is a high-level architecture diagram of the pipeline (master → demand → intervals → workforce → fulfilment → last-mile → quality → build fact → dashboards). Rendered as a Mermaid flowchart so you can visualize joins and data movement at a glance.
+
+```mermaid
+flowchart TD
+	A[Master data: stores, items, time intervals] --> B[Daily demand generator]
+	B --> C[Interval allocation (48 half-hour buckets)]
+	C --> D[Orders & order items (detail window)]
+	D --> E[Store fulfilment (picker assignments, pick events)]
+	E --> F[Last-mile (rider assignment, deliveries, SLA calculations)]
+	E --> G[Quality events & root-cause classification]
+	F --> H[Interval aggregation & diagnostics]
+	G --> H
+	H --> I[data/processed/interval_operations_analysis.csv]
+	I --> J[Dashboards & charts (SLA heatmaps, utilization, root causes)]
+	style A fill:#f9f,stroke:#333,stroke-width:1px
+	style I fill:#bbf,stroke:#333,stroke-width:1px
+```
+
+This diagram maps directly to the scripts `scripts/01_*` → `scripts/09_*`. Each arrow represents CSV outputs read by the next stage. Use the diagram during walkthroughs to keep the join keys and grain explicit.
+
+
+---
+
 **Simulation methodology (brief)**
 - **Demand:** baseline orders multiplied by explicit factors (day-of-week, weather, promotions, salary-week) and sampled via Poisson draws.
 - **Interval split:** store-specific multinomial allocation to 48 half-hour buckets so interval totals reconcile to daily totals.
