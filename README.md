@@ -79,220 +79,137 @@ Simulation methodology (high level)
 Validation and data quality
 - Each script includes a `validate_*` function which checks structural (uniqueness, foreign keys), volumetric (row counts), and behavioral (weekend > weekday demand; evening > night) expectations.
 - If validations fail, scripts raise an exception and stop to prevent downstream contamination.
+# Quick Commerce Operations — Simulated Operational Lifecycle
 
-<a name="fact-interval-operations"></a>
-Canonical fact: `interval_operations_analysis.csv` (fact_interval_operations)
-This is the essential analytical table used by dashboards and analysis. It is built in `scripts/09_build_interval_operations_analysis.py` and contains (non-exhaustive) the following fields:
-- `Store_Date_Interval_ID`, `Store_ID`, `Date`, `Interval_ID`, `Daypart`
-- Operational capacity and allocations: `Active_Pickers`, `Picking_Pickers`, `Putaway_Pickers`, `Audit_Pickers`, `Putaway_Units_Capacity`, `Picker_Active_Minutes`, `Picker_Utilization`, `Required_Pickers_At_Target`, `Picker_Supply_Gap`
-- Rider supply and usage: `Active_Riders`, `Busy_Riders`, `Rider_Busy_Minutes`, `Rider_Utilization`, `Required_Riders_At_Target`, `Rider_Supply_Gap`, `Rider_Cost_INR`, `Rider_Cost_Per_Order_INR`
-- Order and service KPIs: `Orders`, `Units`, `Revenue_INR`, `SLA_Breaches`, `SLA_Breach_Rate`, `Average_Total_Delivery_Min`, `Average_Pick_Queue_Min`, `Average_Picking_Min`, `Average_Last_Mile_Min`
-- Quality signals: `Quality_Issue_Count`, `Orders_With_Quality_Issue`, `Missing_Item_Count`, `Wrong_Item_Count`, `Damaged_Item_Count`, `Quality_Issue_Rate`, `Quality_Financial_Impact_INR`
-- Diagnostics and decisions: `Dominant_Root_Cause`, `Dominant_Root_Cause_Count`, `Recommended_Action`
+This repository provides a reproducible simulation and analytics pipeline that models core quick-commerce operations: store fulfilment (pickers), last-mile delivery (riders), order-level events, quality issues, and an interval-level analytical fact. Use this repo to build dashboards, explore operational trade-offs, and test rostering or fleet-sizing policies.
 
-<a name="how-the-fact-maps-to-dashboards"></a>
-How the fact maps to dashboards (chart-by-chart guidance and ranking)
-I recommend the following prioritized charts for a production-ready operational dashboard. Each entry includes why it matters and how to interpret it. The ranking is by operational impact: how directly the visualization leads to actionable decisions.
+**Quick start (one-minute orientation)**
+- **Run order:** execute scripts `01` → `09` in `scripts/` (see `How to run` below).
+- **Primary artifact:** `data/processed/interval_operations_analysis.csv` — a canonical fact table at the store × date × half-hour interval grain.
+- **Onboarding:** open `notebooks/quick_exploration.ipynb` and `data/sample/interval_operations_sample.csv` for a fast, dependency-light tour.
 
-1) **SLA Breach Rate Heatmap (Top priority)**
-- Data: pivot `SLA_Breach_Rate` by `Store_ID` (rows) and `Interval_ID` (columns) (or Daypart aggregation).
-- Why: quickly surfaces persistent intervals and stores with high breach frequency (capacity gaps, route issues).
-- Interpretation: hotspots during evening/lunch indicate pick or rider shortages; consistent overnight hotspots may indicate long tail issues or routing.
-- Action: use `Rider_Supply_Gap` and `Picker_Supply_Gap` to decide whether rider hiring, rebalancing, or picker protection is required.
+**What this repo contains (short)**
+- **Simulation scripts:** `scripts/01_generate_master_data.py` … `scripts/09_build_interval_operations_analysis.py`
+- **Raw outputs:** `data/raw/` — event-level CSVs used to build the fact
+- **Processed fact:** `data/processed/interval_operations_analysis.csv`
+- **Sample for onboarding:** `data/sample/interval_operations_sample.csv` and `data/sample/README.md`
+- **Notebook:** `notebooks/quick_exploration.ipynb` — example analyses and charts
 
-2) **Required vs Available Riders / Picker Supply Gap (High)**
-- Data: line or bar chart comparing `Required_Riders_At_Target` vs `Active_Riders` (and same for pickers) aggregated by store or network.
-- Why: exposes systemic under/over-supply and times when utilization is likely suboptimal.
-- Interpretation: positive gap → surplus; negative gap → shortage. Follow with utilization charts to confirm.
-- Action: adjust rosters, create targeted incentives, or reassign riders across stores.
+**Learning path (how we’ll teach this project)**
+Follow this order when reviewing the project; each step builds on the previous and we'll walk through formulas, joins, and the Solver walkthrough when you are ready:
 
-3) **Rider Utilization & Cost per Order (High)**
-- Data: scatter of `Rider_Utilization` vs `Rider_Cost_Per_Order_INR`, sized by `Orders` or `Units` per interval.
-- Why: shows efficiency—high utilization + low cost is desirable; high cost with low utilization indicates inefficiency.
-- Interpretation: intervals with low utilization but high cost may be caused by long distances or inefficient routing; high utilization and high cost can indicate necessary incentives.
-- Action: modify routing, incentive plan, or shift allocation.
+1. **Business objective:** what SLA and service trade-offs we model
+2. **Master data:** stores, time intervals, and store attributes
+3. **Daily demand:** how daily orders are generated and drivers
+4. **Interval allocation:** splitting daily demand into 48 half-hour buckets
+5. **Workforce model:** shifts, attendance, pickers, and riders
+6. **Fulfilment & last-mile:** pick sequencing and rider assignment
+7. **Quality & root causes:** synthetic item-level quality failures
+8. **Build fact:** `interval_operations_analysis.csv` — joins and keys
+9. **Dashboards & charts:** heatmaps, utilization, and cost analysis
+10. **Rostering & Solver:** how shift matrices and Solver reduce excess capacity
+11. **Validation & sensitivity:** tests, parameter sweeps, and scenario analysis
+12. **Operational playbook:** recommended actions and how to apply them
 
-4) **Picker Utilization & Pick Queue / Picking Times (High)**
-- Data: time-series or heatmap of `Picker_Utilization`, `Average_Pick_Queue_Min`, `Average_Picking_Min` by interval.
-- Why: reveals internal bottlenecks that directly cause SLA breaches and quality issues.
-- Interpretation: rising pick queue correlates with increased SLA breaches and quality issues; congestion correlates with picking time increases.
-- Action: increase picker protection during peaks, add OD pickers, or shift put-away schedules.
+---
 
-5) **Root Cause Distribution (Medium-High)**
-- Data: stacked bar or treemap of `Dominant_Root_Cause` counts by store or interval.
-- Why: prioritizes interventions by dominant cause (e.g., Rider Supply vs Picker Queue vs Drop-Zone Handoff).
-- Interpretation: if `Rider Supply / Availability` dominates, focus on last-mile; if `Picker Capacity / Queue` dominates, focus on store fulfilment.
-- Action: targeted operational playbooks per dominant cause.
+**Primary files to inspect (fast links)**
+- `scripts/01_generate_master_data.py` … `scripts/09_build_interval_operations_analysis.py` — pipeline scripts
+- `data/processed/interval_operations_analysis.csv` — canonical fact
+- `data/sample/interval_operations_sample.csv` — representative sample for onboarding
+- `notebooks/quick_exploration.ipynb` — exploration notebook
 
-6) **Quality Issue Dashboard (Medium)**
-- Data: rates and financial impact: `Quality_Issue_Rate`, `Quality_Financial_Impact_INR` by store/interval, plus item-level drills.
-- Why: ties quality to operational metrics (congestion, audit backlog) and quantifies cost.
-- Interpretation: high quality issue rate during high congestion or high putaway backlog suggests root cause is internal process.
-- Action: increase audits, retrain pickers, or adjust inbound putaway schedules.
+**How to run (developer quickstart)**
+1. Create and activate a venv and install dependencies (recommended):
 
-7) **Order Volume & Revenue Heatmap / Trends (Medium)**
-- Data: `Orders`, `Units`, `Revenue_INR` over time and by interval.
-- Why: baseline demand signals for capacity planning.
-- Interpretation: use with utilization and cost charts to balance service vs cost.
-
-8) **Top-10 Stores by SLA Breaches / Cost (Medium)**
-- Data: ranked table with `SLA_Breach_Rate`, `Rider_Cost_Per_Order_INR`, `Quality_Issue_Rate`.
-- Why: executive summary and prioritization for station-level interventions.
-
-9) **Recommended Actions Summary (Operational playbook)**
-- Data: count of `Recommended_Action` by store/interval.
-- Why: converts analytics into a simple to-follow operational to-do list for store managers and the operations center.
-
-<a name="technical-notes-for-building-charts"></a>
-Technical notes for building charts
-- Grain: keep `Store_Date_Interval_ID` as the primary key. Aggregate thoughtfully (by store, daypart, or hour) to reduce noise.
-- Rolling windows: use 3-day or 7-day rolling averages for network KPIs to smooth spiky intervals and identify persistent problems.
-- Alerts: automatically flag intervals where `SLA_Breach_Rate > 0.15` and either `Rider_Supply_Gap < 0` or `Picker_Supply_Gap < 0`.
-
-<a name="dashboard-layout-recommendation"></a>
-Dashboard layout recommendation
-- **Overview**: KPI cards — Average SLA breach rate, Average rider utilization, Average picker utilization, Network orders/day, Quality issue rate.
-- **Capacity**: Rider/Picker supply vs required charts, utilization distribution, cost per order.
-- **Service**: SLA Breach heatmap, SLA distribution, SLA breach root causes.
-- **Fulfilment**: Pick queue times, picking minutes, putaway backlog, picker intervals with high `Orders_Per_Picking_Picker`.
-- **Quality**: Quality issue heatmap, financial impact, issue types, sample order drilldown.
-- **Actions**: Top recommended actions and a time-window to apply them, with a basic before/after comparison panel.
-
-<a name="operational-recommendations"></a>
-Operational recommendations and how to use this dataset
-- Use the simulation to test roster changes: increase/decrease riders or putaway capacity and observe the downstream SLA and cost impact.
-- Evaluate incentive programs by changing `PEAK_INCENTIVE_PER_ORDER` and `PROMOTION_PROBABILITY`.
-- Test routing and speed assumptions by adjusting `WEATHER_SPEED_KMH` and check sensitivity.
-- Use the root-cause table to build a prioritized remediation plan and measure impact in the simulation.
-
-<a name="limitations-and-ethical-considerations"></a>
-Limitations and ethical considerations
-- Synthetic: even though the dataset is realistic and internally consistent, it is synthetic and should not be used to make irreversible operational decisions without validation on real data.
-- Local assumptions: many parameters (Hyderabad-specific weather probabilities, salary-week logic) are chosen as realistic examples; adapt to your target geography before operationalizing.
-- Privacy: no personal or PII is generated for riders, pickers, or customers.
-
-<a name="how-to-run-the-pipeline"></a>
-How to run the pipeline
-1. Ensure Python 3 and `pandas`, `numpy` are installed (recommended: create a venv).
-2. From the project root run scripts in order 01 → 09. Example:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt  # if available, otherwise pip install pandas numpy
+pip install -r requirements.txt  # or pip install pandas numpy matplotlib
+```
+
+2. Run scripts in order from the project root:
+
+```bash
 python3 scripts/01_generate_master_data.py
 python3 scripts/02_generate_daily_demand.py
-... (run through) ...
+...
 python3 scripts/09_build_interval_operations_analysis.py
 ```
 
-<a name="files-to-inspect-for-building-dashboards"></a>
-Files to inspect for building dashboards
-- `data/processed/interval_operations_analysis.csv` — primary fact used for dashboards.
-- `data/raw/*` — supporting raw events for line-level investigation.
-- `data/validation/*` — validation reports from each step, useful for QA and trust.
+---
 
-<a name="contributing-and-extension-ideas"></a>
-Contributing and extension ideas
-- Add more realistic routing or map-based distance estimation.
-- Replace synthetic weather with a time-series derived from real historical weather.
-- Add multi-zone rider repositioning logic or a route optimizer to study routing trade-offs.
-- Add customer cancellation behavior and its effect on rider utilization.
+**Canonical fact: structure & key fields**
+The canonical fact `interval_operations_analysis.csv` (produced by `scripts/09_build_interval_operations_analysis.py`) is at the store × date × half-hour interval grain and contains fields such as:
 
-<a name="contact-and-citation"></a>
-Contact and citation
-- If you publish analyses based on this simulation, cite the repository and include parameter choices (seed values and any changed assumptions) so readers can reproduce your work.
+- **keys:** `Store_Date_Interval_ID`, `Store_ID`, `Date`, `Interval_ID`, `Daypart`
+- **picker capacity:** `Active_Pickers`, `Picker_Utilization`, `Required_Pickers_At_Target`, `Picker_Supply_Gap`
+- **rider supply:** `Active_Riders`, `Rider_Utilization`, `Required_Riders_At_Target`, `Rider_Supply_Gap`, `Rider_Cost_INR`
+- **service KPIs:** `Orders`, `Units`, `Revenue_INR`, `SLA_Breaches`, `SLA_Breach_Rate`, `Average_Total_Delivery_Min`
+- **quality signals:** `Quality_Issue_Count`, `Missing_Item_Count`, `Wrong_Item_Count`, `Quality_Financial_Impact_INR`
+- **diagnostics:** `Dominant_Root_Cause`, `Recommended_Action`
 
-<a name="files-referenced-in-this-readme"></a>
-Files referenced in this README
-- Scripts: [scripts/01_generate_master_data.py](scripts/01_generate_master_data.py) — [scripts/09_build_interval_operations_analysis.py](scripts/09_build_interval_operations_analysis.py)
-- Primary fact: [data/processed/interval_operations_analysis.csv](data/processed/interval_operations_analysis.csv)
+Keep `Store_Date_Interval_ID` as the primary key for joins and aggregations.
 
 ---
-This README was generated from a code inspection of the simulation pipeline in this repository and is intended as a publication-quality companion document explaining the mechanics, intent, and recommended analysis for the simulated quick-commerce operations dataset.
 
-**Learning Order & Key Achievement**
+**Recommended charts and interpretation (prioritized)**
+- **SLA Breach Heatmap (Top):** pivot `SLA_Breach_Rate` by `Store_ID` × `Interval_ID` to spot hotspots.
+- **Required vs Active Riders/Pickers:** line charts compare `Required_*` vs `Active_*` to reveal supply gaps.
+- **Utilization vs Cost:** scatter plots of `Rider_Utilization` vs `Rider_Cost_Per_Order_INR` to spot inefficiencies.
+- **Picker queue & picking time:** time-series of `Average_Pick_Queue_Min` and `Average_Picking_Min` to find internal bottlenecks.
+- **Root-cause distribution:** stacked bars/treemap of `Dominant_Root_Cause` to prioritize interventions.
 
-When we resume, we’ll walk through the project in learning order:
+Practical tips: prefer 3–7 day rolling averages for KPIs and flag intervals with `SLA_Breach_Rate > 0.15` plus a negative supply gap.
 
-1. What business problem we are solving
-2. How raw order, rider, picker, shift, and SLA data connect
-3. Why we created the interval-level analysis table
-4. How PivotTables converted interval data into operational KPIs
-5. Rider utilization and SLA relationships
-6. How workload became required rider headcount
-7. Why attendance and scenario buffers were added
-8. How shift coverage matrices work
-9. What Solver actually optimized
-10. Why the first roster produced excessive overlaps
-11. How changing one shift reduced rider-hours from 4,090 to 3,978 while maintaining full coverage
-12. How we would test rain, promotions, attendance loss, and demand surges
+---
 
-**Key achievement so far**
+**Images and figures**
+The repo contains a set of sample charts used for onboarding (in `docs/images/`). These are embedded below and are intended as examples; replace them with exported charts from your workbook if needed.
 
-```
-Original roster:
-4,090 scheduled rider-hours
-Maximum excess: 112 riders
+- Figure: SLA breach heatmap — `docs/images/fig-sla-heatmap.png`
+- Figure: Required vs Active Riders — `docs/images/fig-required-vs-active-riders.png`
+- Figure: Picker Utilization by interval — `docs/images/fig-picker-utilization.png`
+- Figure: Top stores by SLA — `docs/images/fig-top-stores-sla.png`
+- Figure: Daypart SLA — `docs/images/fig-daypart-sla.png`
+- Figure: Daypart riders — `docs/images/fig-daypart-required-vs-active.png`
 
-Revised roster:
-3,978 scheduled rider-hours
-Maximum excess: 61 riders
-All hours still covered
-```
+(These images are generated by `scripts/generate_sample_charts.py`.)
 
-That is a reduction of:
+---
 
-```
-112 rider-hours
-2.7% of scheduled capacity
-```
+**Simulation methodology (brief)**
+- **Demand:** baseline orders multiplied by explicit factors (day-of-week, weather, promotions, salary-week) and sampled via Poisson draws.
+- **Interval split:** store-specific multinomial allocation to 48 half-hour buckets so interval totals reconcile to daily totals.
+- **Workforce:** scheduled shifts, attendance probabilities, and short OD shifts for surge.
+- **Fulfilment:** item-level pick-time model adjusted for product complexity and congestion; deterministic assignment simulates queues.
+- **Last-mile:** rider assignment with distance/speed estimates and weather adjustments; SLA combines distance, load and congestion.
+- **Quality:** item-level risk model produces missing/wrong/damaged counts and classifies dominant root causes.
 
-**Management lesson**
+---
 
-> Headcount optimization alone is insufficient when shift timings are poorly aligned with demand. Redesigning shift boundaries can reduce excess capacity without compromising SLA coverage.
+**Validation & reproducibility**
+- Every script includes `validate_*` checks (structural, volumetric, behavioral). Failing validations raise exceptions to avoid contaminating downstream data.
+- All scripts use a documented random `SEED` for determinism; outputs are CSVs in `data/` for auditability.
 
-**Save / Resume**
+---
 
-Save the workbook as it is. When we return, we’ll review the entire pipeline slowly from the business question through the Excel formulas and Solver logic before making further changes.
+**Operational findings (quick summary)**
+- **Key achievement so far:** the roster redesign reduced scheduled rider-hours from **4,090** to **3,978** while preserving coverage — a 112 rider-hour reduction (~2.7%).
+- **Management lesson:** headcount optimization without aligning shift boundaries yields excess capacity; shift redesign can cut excess without losing coverage.
 
-**Images and Figures (how to include)**
+---
 
-To make the README easier to comprehend, add a couple of representative pictures or exported charts from your Excel workbook into `docs/images/` and reference them below. Recommended figures:
+**Files & next steps**
+- `scripts/generate_sample_charts.py` — regenerates onboarding PNGs in `docs/images/` from the sample CSV.
+- `data/sample/README.md` — explains how the sample was created (reservoir sampling) and its provenance.
 
-- `docs/images/fig-sla-heatmap.png` — SLA Breach Rate heatmap (store × interval)
-- `docs/images/fig-required-vs-active-riders.png` — Required vs Active riders (hourly)
-- `docs/images/fig-picker-utilization.png` — Picker utilization and pick-queue times
+If you'd like, I will:
+- regenerate alternate aggregates (rolling-window heatmaps, store-level trends), or
+- produce a polished PDF presenation of the findings for reviewers.
 
-How to export from Excel (Mac):
+---
 
-1. Open the workbook and select the PivotTable or chart.
-2. Right-click the chart → `Save as Picture...` → choose `PNG`.
-3. Save to `docs/images/` (create the folder if it doesn't exist).
+**Contact & citation**
+If you publish analyses based on this simulation, please cite the repository and include parameter choices (seed, modified assumptions) so others can reproduce your work.
 
-Insert images in README using the markdown below (replace filenames accordingly):
-
-![SLA breach heatmap](docs/images/fig-sla-heatmap.png)
-
-Figure: SLA Breach Rate heatmap (store × interval) — highlights persistent hotspots.
-
-![Required vs Active Riders](docs/images/fig-required-vs-active-riders.png)
-
-Figure: Required vs Active Riders (mean across stores) — where supply gaps emerge.
-
-![Picker utilization](docs/images/fig-picker-utilization.png)
-
-Figure: Picker Utilization by interval — internal fulfilment pressure indicator.
-
-![Top stores by SLA](docs/images/fig-top-stores-sla.png)
-
-Figure: Top stores by average SLA breach rate (sample) — prioritize these stores.
-
-![Daypart SLA](docs/images/fig-daypart-sla.png)
-
-Figure: Average SLA breach rate by daypart — daypart-level targeting.
-
-![Daypart riders](docs/images/fig-daypart-required-vs-active.png)
-
-Figure: Required vs Active Riders by daypart — shows mismatches at a daypart granularity.
-
-If you want different aggregates (store-level drill, rolling-window heatmaps, or top-N store trends), tell me which variant and I'll add it to `scripts/generate_sample_charts.py` and regenerate the images.
