@@ -208,20 +208,34 @@ The repo contains a set of sample charts used for onboarding (in `docs/images/`)
 
 **Data pipeline architecture**
 
+
 Below is a high-level architecture diagram of the pipeline (master → demand → intervals → workforce → fulfilment → last-mile → quality → build fact → dashboards). Rendered as a Mermaid flowchart so you can visualize joins and data movement at a glance.
 
 ```mermaid
 flowchart TD
-	A[Master data: stores items time_intervals] --> B[Daily demand generator]
-	B --> C[Interval allocation: 48 half-hour buckets]
-	C --> D[Orders and order_items]
-	D --> E[Store fulfilment: picker assignments and pick events]
-	E --> F[Last mile: rider assignment deliveries SLA calculations]
-	E --> G[Quality events and root cause classification]
-	F --> H[Interval aggregation and diagnostics]
-	G --> H
-	H --> I[data/processed/interval_operations_analysis.csv]
-	I --> J[Dashboards and charts: SLA heatmaps utilization root causes]
+	A["Store and time masters"] --> B["Daily demand"]
+	B --> C["30-minute interval demand"]
+	C --> D["Orders and order items"]
+	A --> E["Workers and shifts"]
+	D --> F["Picker fulfilment"]
+	E --> F
+	F --> G["Rider assignment and delivery"]
+	E --> G
+	G --> H["Quality issues and SLA root causes"]
+	F --> H
+	D --> H
+
+	C --> I["Interval analytical fact table"]
+	F --> I
+	G --> I
+	H --> I
+	E --> I
+
+	I --> J["Power Query"]
+	J --> K["PivotTables and charts"]
+	K --> L["Hourly rider requirements"]
+	L --> M["Shift matrix"]
+	M --> N["Solver roster optimization"]
 ```
 
 This diagram maps directly to the scripts `scripts/01_*` → `scripts/09_*`. Each arrow represents CSV outputs read by the next stage. Use the diagram during walkthroughs to keep the join keys and grain explicit.
