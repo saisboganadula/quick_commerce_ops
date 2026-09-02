@@ -27,29 +27,30 @@ All data are synthetic. Results demonstrate analytical and methodological feasib
 - Canonical store-date-interval analytical fact table
 - Scenario-based rider-roster analysis
 
+
 ## Contents
 
-- [Run order (high level)](#run-order-high-level)
+- [Research purpose](#research-purpose)
+- [Project at a glance](#project-at-a-glance)
+- [Run order](#run-order)
 - [Purpose and audience](#purpose-and-audience)
 - [Why this dataset is representative](#why-this-dataset-is-representative)
 - [Reproducibility and determinism](#reproducibility-and-determinism)
-- [Key generated artifacts (selected)](#key-generated-artifacts-selected)
-- [Simulation methodology (high level)](#simulation-methodology-high-level)
+- [Key generated artifacts](#key-generated-artifacts)
+- [Simulation methodology](#simulation-methodology)
 - [Validation and data quality](#validation-and-data-quality)
-- [Canonical fact: interval_operations_analysis.csv (fact_interval_operations)](#fact-interval-operations)
-- [How the fact maps to dashboards (chart-by-chart guidance and ranking)](#how-the-fact-maps-to-dashboards)
-- [Technical notes for building charts](#technical-notes-for-building-charts)
-- [Dashboard layout recommendation](#dashboard-layout-recommendation)
-- [Operational recommendations and how to use this dataset](#operational-recommendations)
-- [Limitations and ethical considerations](#limitations-and-ethical-considerations)
-- [How to run the pipeline](#how-to-run-the-pipeline)
-- [Files to inspect for building dashboards](#files-to-inspect-for-building-dashboards)
-- [Contributing and extension ideas](#contributing-and-extension-ideas)
+- [Quick start](#quick-start)
+- [Learning path](#learning-path)
+- [Canonical analytical fact](#canonical-analytical-fact)
+- [Recommended charts](#recommended-charts)
+- [Data pipeline architecture](#data-pipeline-architecture)
+- [Pipeline joins](#pipeline-joins)
+- [Validation checks](#validation-checks)
+- [Modelled findings](#modelled-findings)
+- [Planned extensions](#planned-extensions)
 - [Contact and citation](#contact-and-citation)
-- [Files referenced in this README](#files-referenced-in-this-readme)
 
-<a name="run-order-high-level"></a>
-Run order (high level)
+## Run order
 - **01_generate_master_data.py** — store master, time intervals, and basic validation.
 - **02_generate_daily_demand.py** — calendar, weather, promotions, expected and realized daily orders.
 - **03_generate_interval_demand.py** — split each store-day across 48 half-hour intervals.
@@ -60,25 +61,21 @@ Run order (high level)
 - **08_generate_quality_and_root_causes.py** — generate item quality issues and classify SLA-breach root causes.
 - **09_build_interval_operations_analysis.py** — combine everything into the canonical analytical fact table `interval_operations_analysis.csv` and produce recommended operational actions.
 
-<a name="purpose-and-audience"></a>
-Purpose and audience
+## Purpose and audience
 - **Audience:** novice analysts, data scientists, operations researchers, and domain experts.
 - **Purpose:** provide a complete, explainable, and auditable simulation of the operational lifecycle for quick commerce so researchers and practitioners can test policies (rostering, surge staffing, incentives), validate algorithms, or build dashboards that reflect realistic operational signals.
 
-<a name="why-this-dataset-is-representative"></a>
-Why this dataset is representative
+## Why this dataset is representative
 - Layered construction: the simulation builds from master data (stores + time grid) through demand, interval allocation, workforce attendance, pick/pack events, and last-mile delivery. This mirrors the real operational flow from order creation to successful delivery.
 - Explainability: each multiplier (day-of-week, weather, promotions, salary-week, noise) is explicit and parameterized for reproducibility and sensitivity analysis.
 - Heterogeneity: store profiles, product categories, worker experience, and rider types (regular vs gig) produce variation representative of real operations.
 - Validation built-in: each script runs a set of deterministic validation checks and fails early if assumptions are violated — this keeps the generated data trustworthy.
 
-<a name="reproducibility-and-determinism"></a>
-Reproducibility and determinism
+## Reproducibility and determinism
 - Every script uses a fixed random `SEED` and documents it at the top. Re-running scripts in sequence with the same seed reproduces identical outputs.
 - All outputs are CSV files in `data/raw`, `data/processed`, and `data/validation` so downstream users can inspect and use them without re-running the full pipeline.
 
-<a name="key-generated-artifacts-selected"></a>
-Key generated artifacts (selected)
+## Key generated artifacts
 - `data/raw/stores.csv` — store list and baseline attributes.
 - `data/raw/time_intervals.csv` — 48 half-hour intervals per day with `Interval_ID`, `Start_Time`, `Daypart`, `Default_Peak_Flag`.
 - `data/raw/daily_store_demand.csv` — per store-date expected and actual daily orders with drivers (weather, promotions, salary week).
@@ -91,8 +88,7 @@ Key generated artifacts (selected)
 - `data/raw/quality_issues.csv`, `data/raw/sla_root_cause_analysis.csv` — synthetic quality failures and classified root causes for SLA breaches.
 - `data/processed/interval_operations_analysis.csv` — the primary fact table (one row per store-date-interval) used to build dashboards and charts.
 
-<a name="simulation-methodology-high-level"></a>
-Simulation methodology (high level)
+## Simulation methodology
 - Demand: daily expected orders are generated from a baseline `Base_Daily_Orders` multiplied by explicit factors: `Day_Of_Week_Factor`, `Salary_Week_Factor`, `Weather_Factor`, `Promotion_Factor`, and bounded random noise. Actual daily counts are sampled using a Poisson draw.
 - Interval splitting: daily order totals are allocated across 48 half-hour buckets with a store-specific, weekend-aware demand curve. A multinomial draw assigns individual orders to intervals so interval-level totals exactly reconcile to daily totals.
 - Workforce: headcounts are specified per store. Workers are assigned home shifts and scheduled; attendance (late, early, absent) is simulated with probabilities. Over-time short-OD shifts are added on surge days.
@@ -100,8 +96,7 @@ Simulation methodology (high level)
 - Last mile: riders are selected from attended rider shifts, travel times are estimated from distances and weather-modified speeds, and return availability is updated to model capacity. SLA estimates combine distance, load, peak, and weather.
 - Quality and root causes: item-level probabilities for missing/wrong/damaged are computed from observable risk drivers (audit backlog, putaway backlog, fragile flag, congestion). SLA-breach root causes are ranked by which stage shows the largest excess delay.
 
-<a name="validation-and-data-quality"></a>
-Validation and data quality
+## Validation and data quality
 - Each script includes a `validate_*` function which checks structural (uniqueness, foreign keys), volumetric (row counts), and behavioral (weekend > weekday demand; evening > night) expectations.
 - If validations fail, scripts raise an exception and stop to prevent downstream contamination.
 ## Overview
