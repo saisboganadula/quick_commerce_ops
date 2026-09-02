@@ -1,6 +1,31 @@
-# Quick Commerce Ops — Simulated Operations & Interval Analytics
+# Quick-Commerce Operations Simulation
 
-This repository contains a reproducible simulation and analytics pipeline that models core quick-commerce operations: in-store fulfilment (pickers), last-mile delivery (riders), order-level detail, quality issues, and interval-level operational analysis. The artifacts produced are intended to support dashboards, research, algorithm development (fleet sizing, rostering, route planning), and teaching about operational trade-offs in on-demand retail.
+A reproducible simulation and analytics pipeline for studying fulfilment, workforce capacity, SLA performance, quality failures, and last-mile operating trade-offs across five synthetic Hyderabad dark stores.
+
+## Research purpose
+
+The project demonstrates how connected operational data can support:
+
+- demand-capacity analysis
+- picker and rider workforce planning
+- SLA root-cause investigation
+- quality-issue analysis
+- rostering and surge-policy evaluation
+- reproducible scenario experimentation
+
+All data are synthetic. Results demonstrate analytical and methodological feasibility and should not be interpreted as production outcomes.
+
+## Project at a glance
+
+- 5 synthetic Hyderabad dark stores
+- 164,000+ simulated orders
+- 48 half-hour operating intervals per day
+- 9 connected data-generation and analysis stages
+- Fixed random seeds for reproducibility
+- Structural, volumetric, and behavioural validation
+- Order, fulfilment, picker, rider, quality, incident, and SLA data
+- Canonical store-date-interval analytical fact table
+- Scenario-based rider-roster analysis
 
 ## Contents
 
@@ -419,8 +444,6 @@ GROUP BY f.Store_ID, f.Date, f.Interval_ID
 HAVING f.SLA_Breaches <> SUM(o.sla_breach_flag);
 ```
 
-These validation checks are a good starting point; during the final walkthrough I can add CI-style assertions (pytest or simple `scripts/validate_fact.py`) that raise errors when checks fail. If you want, I'll add `scripts/validate_fact.py` that runs the pandas checks and returns non-zero exit codes for CI.
-
 
 ---
 
@@ -446,13 +469,14 @@ These validation checks are a good starting point; during the final walkthrough 
 
 ---
 
-**Files & next steps**
-- `scripts/generate_sample_charts.py` — regenerates onboarding PNGs in `docs/images/` from the sample CSV.
-- `data/sample/README.md` — explains how the sample was created (reservoir sampling) and its provenance.
+## Planned extensions
 
-If you'd like, I will:
-- regenerate alternate aggregates (rolling-window heatmaps, store-level trends), or
-- produce a polished PDF presenation of the findings for reviewers.
+- Scenario and sensitivity analysis across demand, attendance, weather, and service assumptions
+- Alternative shift and surge-capacity policies
+- Forecast-informed workforce planning
+- Picker and rider policy comparisons
+- CI-based validation of analytical fact-table integrity
+- Extension toward network-level resilience experiments
 
 ---
 
